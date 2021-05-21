@@ -1,8 +1,9 @@
 ﻿@page "/"
 @using GridTest.Shared
 @inject HttpClient Http
+@inject Blazored.Toast.Services.IToastService ts;
 
-<h1>Weather forecast</h1>
+<h1>Blazorise RowInserting & RowUpdating Tester</h1>
 
 <p>This component demonstrates fetching data from the server.</p>
 
@@ -12,12 +13,16 @@
 }
 else
 {
+<p>Put reject in the summary to simulate failed api call</p>
+<br>
+ <Button Clicked="TESTFORDELETE">DELETE TEST</Button>
+ <br>
 <DataGrid TItem="WeatherForecast"
           Data="@forecasts" Editable="true"
           EditMode="DataGridEditMode.Popup"
-          RowInserted="AddRow"
-          RowUpdated="UpdRow"
-          RowRemoved="DelRow"
+          RowInserting="RowInserting"
+          RowUpdating="RowUpdating"
+          RowRemoving="RowRemoving"
           UseInternalEditing="false">
 
     <DataGridCommandColumn TItem="WeatherForecast">
@@ -44,24 +49,85 @@ else
         forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
     }
 
-    protected async Task AddRow(SavedRowItem<WeatherForecast, Dictionary<string, object>> e)
-    {
+    //protected async Task AddRow(SavedRowItem<WeatherForecast, Dictionary<string, object>> e)
+    //{
+    //    if (e.Item.Summary == "reject")
+    //    {
+    //        Console.WriteLine("REJECTED");
+    //    }
+    //    else
+    //    {
+    //        await Http.PostAsJsonAsync("WeatherForecast", e.Item);
+    //        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
+    //    }
+    //}
 
-        await Http.PostAsJsonAsync("WeatherForecast", e.Item);
+    //HOW DO YOU GET THE CURRENT NEWLY ADDED VALUES HERE?
+    protected async Task RowInserting(CancellableRowChange<WeatherForecast, Dictionary<string, object>> e)
+    {
+        WeatherForecast u = new WeatherForecast();
+        u.Date = (string)e.Values["Date"]; //IS THERE A EASIER WAY TO GET THE CURRENT VALUES
+        u.TemperatureC = (string)e.Values["TemperatureC"]; //IS THERE A EASIER WAY TO GET THE CURRENT VALUES
+        u.TemperatureF = (string)e.Values["TemperatureF"]; //IS THERE A EASIER WAY TO GET THE CURRENT VALUES
+        u.Summary = (string)e.Values["Summary"]; //IS THERE A EASIER WAY TO GET THE CURRENT VALUES
+
+        if (u.Summary == "reject")
+        {
+            ts.ShowError("REJECTED", "Inserting row");
+            e.Cancel = true;
+        }
+        else
+        {
+            await Http.PostAsJsonAsync("WeatherForecast", u);
+            forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
+        }
+    }
+
+    //HOW DO YOU GET THE CURRENT EDIT VALUES HERE?
+    protected async Task RowUpdating(CancellableRowChange<WeatherForecast, Dictionary<string, object>> e)
+    {
+        WeatherForecast u = new WeatherForecast();
+        u.key = e.Item.key; // these are the old values
+        u.Date = (string)e.Values["Date"]; //IS THERE A EASIER WAY TO GET THE CURRENT VALUES
+        u.TemperatureC = (string)e.Values["TemperatureC"]; //IS THERE A EASIER WAY TO GET THE CURRENT VALUES
+        u.TemperatureF = (string)e.Values["TemperatureF"]; //IS THERE A EASIER WAY TO GET THE CURRENT VALUES
+        u.Summary = (string)e.Values["Summary"]; //IS THERE A EASIER WAY TO GET THE CURRENT VALUES
+
+        if (u.Summary == "reject")
+        {
+            ts.ShowError("REJECTED", "Updating row");
+            e.Cancel = true;
+        }
+        else
+        {
+            await Http.PutAsJsonAsync("WeatherForecast", u);
+            forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
+        }
+    }
+
+    protected async Task TESTFORDELETE()
+    {
+        WeatherForecast u = new WeatherForecast();
+        u.Date = "test";
+        u.TemperatureC = "for";
+        u.TemperatureF = "delete";
+        u.Summary = "reject";
+        await Http.PostAsJsonAsync("WeatherForecast", u);
         forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
     }
 
-    protected async Task UpdRow(SavedRowItem<WeatherForecast, Dictionary<string, object>> e)
+    protected async Task RowRemoving(CancellableRowChange<WeatherForecast> e)
     {
-
-        await Http.PutAsJsonAsync("WeatherForecast", e.Item);
-        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
-    }
-
-    protected async Task DelRow(WeatherForecast e)
-    {
-        await Http.DeleteAsync("WeatherForecast"+ "?key=" +e.key);
-        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
+        if (e.Item.Summary == "reject")
+        {
+            ts.ShowError("REJECTED", "Removing row");
+            e.Cancel = true;
+        }
+        else
+        {
+            await Http.DeleteAsync("WeatherForecast" + "?key=" + e.Item.key);
+            forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
+        }
     }
 
 }

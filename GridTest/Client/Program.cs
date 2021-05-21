@@ -10,6 +10,7 @@ using Microsoft.Extensions.Logging;
 using Blazorise;
 using Blazorise.Bootstrap;
 using Blazorise.Icons.FontAwesome;
+using Blazored.Toast;
 
 namespace GridTest.Client
 {
@@ -27,6 +28,8 @@ namespace GridTest.Client
             })
             .AddBootstrapProviders()
             .AddFontAwesomeIcons();
+
+            builder.Services.AddBlazoredToast();
 
             await builder.Build().RunAsync();
         }
