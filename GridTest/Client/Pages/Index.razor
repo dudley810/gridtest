@@ -1,0 +1,67 @@
+﻿@page "/"
+@using GridTest.Shared
+@inject HttpClient Http
+
+<h1>Weather forecast</h1>
+
+<p>This component demonstrates fetching data from the server.</p>
+
+@if (forecasts == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+<DataGrid TItem="WeatherForecast"
+          Data="@forecasts" Editable="true"
+          EditMode="DataGridEditMode.Popup"
+          RowInserted="AddRow"
+          RowUpdated="UpdRow"
+          RowRemoved="DelRow"
+          UseInternalEditing="false">
+
+    <DataGridCommandColumn TItem="WeatherForecast">
+        <NewCommandTemplate>
+            <Button Color="Color.Success" Clicked="@context.Clicked">New</Button>
+        </NewCommandTemplate>
+        <EditCommandTemplate>
+            <Button Color="Color.Primary" Clicked="@context.Clicked">Edit</Button>
+        </EditCommandTemplate>
+    </DataGridCommandColumn>
+    <DataGridColumn TItem="WeatherForecast" Field="@nameof(WeatherForecast.key)" Caption="Key" Editable="false"/>
+    <DataGridColumn TItem="WeatherForecast" Field="@nameof(WeatherForecast.Date)" Caption="Date" Editable="true" />
+    <DataGridColumn TItem="WeatherForecast" Field="@nameof(WeatherForecast.TemperatureC)" Caption="Temp C" Editable="true" />
+    <DataGridColumn TItem="WeatherForecast" Field="@nameof(WeatherForecast.TemperatureF)" Caption="Temp F" Editable="true" />
+    <DataGridColumn TItem="WeatherForecast" Field="@nameof(WeatherForecast.Summary)" Caption="Summary" Editable="true" />
+</DataGrid>
+}
+
+@code {
+    private WeatherForecast[] forecasts;
+
+    protected override async Task OnInitializedAsync()
+    {
+        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
+    }
+
+    protected async Task AddRow(SavedRowItem<WeatherForecast, Dictionary<string, object>> e)
+    {
+
+        await Http.PostAsJsonAsync("WeatherForecast", e.Item);
+        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
+    }
+
+    protected async Task UpdRow(SavedRowItem<WeatherForecast, Dictionary<string, object>> e)
+    {
+
+        await Http.PutAsJsonAsync("WeatherForecast", e.Item);
+        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
+    }
+
+    protected async Task DelRow(WeatherForecast e)
+    {
+        await Http.DeleteAsync("WeatherForecast"+ "?key=" +e.key);
+        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
+    }
+
+}
