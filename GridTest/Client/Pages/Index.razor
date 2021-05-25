@@ -1,5 +1,6 @@
 ﻿@page "/"
 @using GridTest.Shared
+@using System.Reflection
 @inject HttpClient Http
 @inject Blazored.Toast.Services.IToastService ts;
 
@@ -13,32 +14,48 @@
 }
 else
 {
-<p>Put reject in the summary to simulate failed api call</p>
-<br>
- <Button Clicked="TESTFORDELETE">DELETE TEST</Button>
- <br>
-<DataGrid TItem="WeatherForecast"
-          Data="@forecasts" Editable="true"
-          EditMode="DataGridEditMode.Popup"
-          RowInserting="RowInserting"
-          RowUpdating="RowUpdating"
-          RowRemoving="RowRemoving"
-          UseInternalEditing="false">
+    <p>Put reject in the summary to simulate failed api call</p>
+    <br>
+    <br>
+    <Button Clicked="TESTFORDELETE">DELETE TEST</Button>
+    <br>
+    <DataGrid TItem="WeatherForecast"
+              Data="@forecasts" Editable="true"
+              EditMode="DataGridEditMode.Popup"
+              RowInserting="RowInserting"
+              RowUpdating="RowUpdating"
+              RowRemoving="RowRemoving"
+              UseInternalEditing="false">
+        <EmptyTemplate>
+            <p class="-text--h4">NO WEATHER</p>
+        </EmptyTemplate>
+        <PopupTitleTemplate>
+            @if (context.EditState == DataGridEditState.Edit)
+            {
+                @($"{context.LocalizationString} Weather {context.Item.key}")
+            }
+            else
+            {
+                @($"{context.LocalizationString} Weather")
+            }
+        </PopupTitleTemplate>
+        <DataGridColumns>
+            <DataGridCommandColumn TItem="WeatherForecast">
+                <NewCommandTemplate>
+                    <Button Color="Color.Success" Clicked="@context.Clicked">New</Button>
+                </NewCommandTemplate>
+                <EditCommandTemplate>
+                    <Button Color="Color.Primary" Clicked="@context.Clicked">Edit</Button>
+                </EditCommandTemplate>
+            </DataGridCommandColumn>
 
-    <DataGridCommandColumn TItem="WeatherForecast">
-        <NewCommandTemplate>
-            <Button Color="Color.Success" Clicked="@context.Clicked">New</Button>
-        </NewCommandTemplate>
-        <EditCommandTemplate>
-            <Button Color="Color.Primary" Clicked="@context.Clicked">Edit</Button>
-        </EditCommandTemplate>
-    </DataGridCommandColumn>
-    <DataGridColumn TItem="WeatherForecast" Field="@nameof(WeatherForecast.key)" Caption="Key" Editable="false"/>
-    <DataGridColumn TItem="WeatherForecast" Field="@nameof(WeatherForecast.Date)" Caption="Date" Editable="true" />
-    <DataGridColumn TItem="WeatherForecast" Field="@nameof(WeatherForecast.TemperatureC)" Caption="Temp C" Editable="true" />
-    <DataGridColumn TItem="WeatherForecast" Field="@nameof(WeatherForecast.TemperatureF)" Caption="Temp F" Editable="true" />
-    <DataGridColumn TItem="WeatherForecast" Field="@nameof(WeatherForecast.Summary)" Caption="Summary" Editable="true" />
-</DataGrid>
+            <DataGridColumn TItem="WeatherForecast" Field="@nameof(WeatherForecast.key)" Caption="Key" />
+            <DataGridColumn TItem="WeatherForecast" Field="@nameof(WeatherForecast.Date)" Caption="Date" Editable="true" />
+            <DataGridColumn TItem="WeatherForecast" Field="@nameof(WeatherForecast.TemperatureC)" Caption="Temp C" Editable="true" />
+            <DataGridColumn TItem="WeatherForecast" Field="@nameof(WeatherForecast.TemperatureF)" Caption="Temp F" Editable="true" />
+            <DataGridColumn TItem="WeatherForecast" Field="@nameof(WeatherForecast.Summary)" Caption="Summary" Editable="true" />
+        </DataGridColumns>
+    </DataGrid>
 }
 
 @code {
@@ -49,36 +66,19 @@ else
         forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
     }
 
-    //protected async Task AddRow(SavedRowItem<WeatherForecast, Dictionary<string, object>> e)
-    //{
-    //    if (e.Item.Summary == "reject")
-    //    {
-    //        Console.WriteLine("REJECTED");
-    //    }
-    //    else
-    //    {
-    //        await Http.PostAsJsonAsync("WeatherForecast", e.Item);
-    //        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
-    //    }
-    //}
-
     //HOW DO YOU GET THE CURRENT NEWLY ADDED VALUES HERE?
     protected async Task RowInserting(CancellableRowChange<WeatherForecast, Dictionary<string, object>> e)
     {
-        WeatherForecast u = new WeatherForecast();
-        u.Date = (string)e.Values["Date"]; //IS THERE A EASIER WAY TO GET THE CURRENT VALUES
-        u.TemperatureC = (string)e.Values["TemperatureC"]; //IS THERE A EASIER WAY TO GET THE CURRENT VALUES
-        u.TemperatureF = (string)e.Values["TemperatureF"]; //IS THERE A EASIER WAY TO GET THE CURRENT VALUES
-        u.Summary = (string)e.Values["Summary"]; //IS THERE A EASIER WAY TO GET THE CURRENT VALUES
+        WeatherForecast w = this.GetCurrentScreen<WeatherForecast>(e.Item, e.Values);
 
-        if (u.Summary == "reject")
+        if (w.Summary == "reject")
         {
             ts.ShowError("REJECTED", "Inserting row");
             e.Cancel = true;
         }
         else
         {
-            await Http.PostAsJsonAsync("WeatherForecast", u);
+            await Http.PostAsJsonAsync("WeatherForecast", w);
             forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
         }
     }
@@ -86,21 +86,16 @@ else
     //HOW DO YOU GET THE CURRENT EDIT VALUES HERE?
     protected async Task RowUpdating(CancellableRowChange<WeatherForecast, Dictionary<string, object>> e)
     {
-        WeatherForecast u = new WeatherForecast();
-        u.key = e.Item.key; // these are the old values
-        u.Date = (string)e.Values["Date"]; //IS THERE A EASIER WAY TO GET THE CURRENT VALUES
-        u.TemperatureC = (string)e.Values["TemperatureC"]; //IS THERE A EASIER WAY TO GET THE CURRENT VALUES
-        u.TemperatureF = (string)e.Values["TemperatureF"]; //IS THERE A EASIER WAY TO GET THE CURRENT VALUES
-        u.Summary = (string)e.Values["Summary"]; //IS THERE A EASIER WAY TO GET THE CURRENT VALUES
+        WeatherForecast w = this.GetCurrentScreen<WeatherForecast>(e.Item,e.Values);
 
-        if (u.Summary == "reject")
+        if (w.Summary == "reject")
         {
             ts.ShowError("REJECTED", "Updating row");
             e.Cancel = true;
         }
         else
         {
-            await Http.PutAsJsonAsync("WeatherForecast", u);
+            await Http.PutAsJsonAsync("WeatherForecast", w);
             forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
         }
     }
@@ -113,10 +108,12 @@ else
         u.TemperatureF = "delete";
         u.Summary = "reject";
         await Http.PostAsJsonAsync("WeatherForecast", u);
-        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
+        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>
+            ("WeatherForecast");
     }
 
-    protected async Task RowRemoving(CancellableRowChange<WeatherForecast> e)
+    protected async Task RowRemoving(CancellableRowChange<WeatherForecast>
+        e)
     {
         if (e.Item.Summary == "reject")
         {
@@ -126,8 +123,20 @@ else
         else
         {
             await Http.DeleteAsync("WeatherForecast" + "?key=" + e.Item.key);
-            forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
+            forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>
+                ("WeatherForecast");
         }
     }
 
+    protected T GetCurrentScreen<T>(object currentObj, Dictionary<string, object> EditedValues)
+    {
+        object obj = JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(currentObj));
+        PropertyInfo[] prop = obj.GetType().GetProperties();
+        foreach (KeyValuePair<string, object> kv in EditedValues)
+        {
+            PropertyInfo pi = (from p in prop where p.Name == kv.Key select p).FirstOrDefault<PropertyInfo>();
+            pi.SetValue(obj, kv.Value);
+        }
+        return (T)obj;
+    }
 }
