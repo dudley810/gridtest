@@ -20,10 +20,10 @@ else
     <Button Clicked="TESTFORDELETE">DELETE TEST</Button>
     <br>
     <DataGrid TItem="WeatherForecast"
-              Data="@forecasts" Editable="true"
-              EditMode="DataGridEditMode.Popup"
-              RowInserting="RowInserting"
-              RowUpdating="RowUpdating"
+              Data="@forecasts" Editable="true" ShowPager="true" PageSize="25"
+              EditMode="DataGridEditMode.Popup" PagerPosition="DataGridPagerPosition.TopAndBottom"
+              RowInserting="RowInserting" Bordered="true" Filterable="false" ShowPageSizes="true"
+              RowUpdating="RowUpdating" Sortable="true"  SortMode="DataGridSortMode.Single"
               RowRemoving="RowRemoving"
               UseInternalEditing="false">
         <EmptyTemplate>
