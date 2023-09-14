@@ -17,7 +17,7 @@ else
     <p>Put reject in the summary to simulate failed api call</p>
     <br>
     <br>
-    <Button Clicked="TESTFORDELETE">DELETE TEST</Button>
+    <Button Class="btn btn-danger" Clicked="TESTFORDELETE">DELETE TEST</Button>
     <br>
     <DataGrid TItem="WeatherForecast"
               Data="@forecasts" Editable="true" ShowPager="true" PageSize="25"
@@ -59,7 +59,7 @@ else
 }
 
 @code {
-    private WeatherForecast[] forecasts;
+    private WeatherForecast[]? forecasts;
 
     protected override async Task OnInitializedAsync()
     {
@@ -69,16 +69,14 @@ else
     //HOW DO YOU GET THE CURRENT NEWLY ADDED VALUES HERE?
     protected async Task RowInserting(CancellableRowChange<WeatherForecast, Dictionary<string, object>> e)
     {
-        WeatherForecast w = this.GetCurrentScreen<WeatherForecast>(e.Item, e.Values);
-
-        if (w.Summary == "reject")
+        if (e.NewItem.Summary == "reject")
         {
-            ts.ShowError("REJECTED", "Inserting row");
+            ts.ShowError("REJECTED - Inserting row");
             e.Cancel = true;
         }
         else
         {
-            await Http.PostAsJsonAsync("WeatherForecast", w);
+            await Http.PostAsJsonAsync("WeatherForecast", e.NewItem);
             forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
         }
     }
@@ -86,16 +84,14 @@ else
     //HOW DO YOU GET THE CURRENT EDIT VALUES HERE?
     protected async Task RowUpdating(CancellableRowChange<WeatherForecast, Dictionary<string, object>> e)
     {
-        WeatherForecast w = this.GetCurrentScreen<WeatherForecast>(e.Item,e.Values);
-
-        if (w.Summary == "reject")
+        if (e.NewItem.Summary == "reject")
         {
-            ts.ShowError("REJECTED", "Updating row");
+            ts.ShowError("REJECTED - Updating row");
             e.Cancel = true;
         }
         else
         {
-            await Http.PutAsJsonAsync("WeatherForecast", w);
+            await Http.PutAsJsonAsync("WeatherForecast", e.NewItem);
             forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
         }
     }
@@ -115,28 +111,16 @@ else
     protected async Task RowRemoving(CancellableRowChange<WeatherForecast>
         e)
     {
-        if (e.Item.Summary == "reject")
+        if (e.NewItem.Summary == "reject")
         {
-            ts.ShowError("REJECTED", "Removing row");
+            ts.ShowError("REJECTED - Removing row");
             e.Cancel = true;
         }
         else
         {
-            await Http.DeleteAsync("WeatherForecast" + "?key=" + e.Item.key);
+            await Http.DeleteAsync("WeatherForecast" + "?key=" + e.NewItem.key);
             forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>
                 ("WeatherForecast");
         }
-    }
-
-    protected T GetCurrentScreen<T>(object currentObj, Dictionary<string, object> EditedValues)
-    {
-        object obj = JsonSerializer.Deserialize<T>(JsonSerializer.Serialize(currentObj));
-        PropertyInfo[] prop = obj.GetType().GetProperties();
-        foreach (KeyValuePair<string, object> kv in EditedValues)
-        {
-            PropertyInfo pi = (from p in prop where p.Name == kv.Key select p).FirstOrDefault<PropertyInfo>();
-            pi.SetValue(obj, kv.Value);
-        }
-        return (T)obj;
     }
 }
