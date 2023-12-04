@@ -28,6 +28,13 @@ namespace GridTest.Server.Controllers
         [HttpGet]
         public IEnumerable<WeatherForecast> Get()
         {
+            WeatherForecast a = new();
+            a.key = Guid.NewGuid();
+            a.TemperatureF = "1";
+            a.TemperatureC = "2";
+            a.Summary = "3";
+            a.Date = "4";
+            wfl.Add(a);
             return wfl;
         }
 

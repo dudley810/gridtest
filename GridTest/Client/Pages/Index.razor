@@ -4,7 +4,7 @@
 @inject HttpClient Http
 @inject Blazored.Toast.Services.IToastService ts;
 
-<h1>Blazorise RowInserting & RowUpdating Tester</h1>
+<h1>RowInserting & RowUpdating Tester</h1>
 
 <p>This component demonstrates fetching data from the server.</p>
 
@@ -17,9 +17,24 @@ else
     <p>Put reject in the summary to simulate failed api call</p>
     <br>
     <br>
-    <Button Class="btn btn-danger" Clicked="TESTFORDELETE">DELETE TEST</Button>
+    <button Class="btn btn-danger" Clicked="TESTFORDELETE">DELETE TEST</button>
     <br>
-    <DataGrid TItem="WeatherForecast"
+    <RadzenButton ButtonStyle="ButtonStyle.Success" Icon="add_circle_outline" class="mt-2 mb-4" Text="New" Click="@InsertRow" Disabled=@(NewWeather != null || WeatherUpdate != null) />
+    <RadzenDataGrid @ref="WeatherGrid" GridLines="Radzen.DataGridGridLines.Both"
+                    Data="@forecasts" TItem="WeatherForecast" AllowSorting="true"
+     AllowMultiColumnSorting="true" AllowPaging="true" PageSize="5"
+     EditMode="DataGridEditMode.Single">
+    <Columns>
+        <RadzenDataGridColumn TItem="WeatherForecast" Property="key" Title="Key"  />
+        <RadzenDataGridColumn TItem="WeatherForecast" Property="Date" Title="Date" />
+        <RadzenDataGridColumn TItem="WeatherForecast" Property="TemperatureC" Title="Temp C" />
+        <RadzenDataGridColumn TItem="WeatherForecast" Property="TemperatureF" Title="Temp F" />
+        <RadzenDataGridColumn TItem="WeatherForecast" Property="Summary" Title="Summary" />
+    </Columns>
+    </RadzenDataGrid>
+
+    @*ORGINAL BLAZORISE CODE
+        <DataGrid TItem="WeatherForecast"
               Data="@forecasts" Editable="true" ShowPager="true" PageSize="25"
               EditMode="DataGridEditMode.Popup" PagerPosition="DataGridPagerPosition.TopAndBottom"
               RowInserting="RowInserting" Bordered="true" Filterable="false" ShowPageSizes="true"
@@ -55,10 +70,11 @@ else
             <DataGridColumn TItem="WeatherForecast" Field="@nameof(WeatherForecast.TemperatureF)" Caption="Temp F" Editable="true" />
             <DataGridColumn TItem="WeatherForecast" Field="@nameof(WeatherForecast.Summary)" Caption="Summary" Editable="true" />
         </DataGridColumns>
-    </DataGrid>
+    </DataGrid> *@
 }
 
 @code {
+    RadzenDataGrid<WeatherForecast> WeatherGrid;
     private WeatherForecast[]? forecasts;
 
     protected override async Task OnInitializedAsync()
@@ -66,61 +82,77 @@ else
         forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
     }
 
+    protected async Task LoadData(LoadDataArgs args)
+    {
+        // forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
+    }
+
+
+    WeatherForecast NewWeather;
+    WeatherForecast WeatherUpdate;
+    async Task InsertRow()
+    {
+        NewWeather = new WeatherForecast();
+        await WeatherGrid.InsertRow(NewWeather);  
+
+    }
+
+    //ORGINAL ROUTINES
     //HOW DO YOU GET THE CURRENT NEWLY ADDED VALUES HERE?
-    protected async Task RowInserting(CancellableRowChange<WeatherForecast, Dictionary<string, object>> e)
-    {
-        if (e.NewItem.Summary == "reject")
-        {
-            ts.ShowError("REJECTED - Inserting row");
-            e.Cancel = true;
-        }
-        else
-        {
-            await Http.PostAsJsonAsync("WeatherForecast", e.NewItem);
-            forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
-        }
-    }
+    // protected async Task RowInserting(CancellableRowChange<WeatherForecast, Dictionary<string, object>> e)
+    // {
+    //     if (e.NewItem.Summary == "reject")
+    //     {
+    //         ts.ShowError("REJECTED - Inserting row");
+    //         e.Cancel = true;
+    //     }
+    //     else
+    //     {
+    //         await Http.PostAsJsonAsync("WeatherForecast", e.NewItem);
+    //         forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
+    //     }
+    // }
 
-    //HOW DO YOU GET THE CURRENT EDIT VALUES HERE?
-    protected async Task RowUpdating(CancellableRowChange<WeatherForecast, Dictionary<string, object>> e)
-    {
-        if (e.NewItem.Summary == "reject")
-        {
-            ts.ShowError("REJECTED - Updating row");
-            e.Cancel = true;
-        }
-        else
-        {
-            await Http.PutAsJsonAsync("WeatherForecast", e.NewItem);
-            forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
-        }
-    }
+    // //HOW DO YOU GET THE CURRENT EDIT VALUES HERE?
+    // protected async Task RowUpdating(CancellableRowChange<WeatherForecast, Dictionary<string, object>> e)
+    // {
+    //     if (e.NewItem.Summary == "reject")
+    //     {
+    //         ts.ShowError("REJECTED - Updating row");
+    //         e.Cancel = true;
+    //     }
+    //     else
+    //     {
+    //         await Http.PutAsJsonAsync("WeatherForecast", e.NewItem);
+    //         forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>("WeatherForecast");
+    //     }
+    // }
 
-    protected async Task TESTFORDELETE()
-    {
-        WeatherForecast u = new WeatherForecast();
-        u.Date = "test";
-        u.TemperatureC = "for";
-        u.TemperatureF = "delete";
-        u.Summary = "reject";
-        await Http.PostAsJsonAsync("WeatherForecast", u);
-        forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>
-            ("WeatherForecast");
-    }
+    // protected async Task TESTFORDELETE()
+    // {
+    //     WeatherForecast u = new WeatherForecast();
+    //     u.Date = "test";
+    //     u.TemperatureC = "for";
+    //     u.TemperatureF = "delete";
+    //     u.Summary = "reject";
+    //     await Http.PostAsJsonAsync("WeatherForecast", u);
+    //     forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>
+    //         ("WeatherForecast");
+    // }
 
-    protected async Task RowRemoving(CancellableRowChange<WeatherForecast>
-        e)
-    {
-        if (e.NewItem.Summary == "reject")
-        {
-            ts.ShowError("REJECTED - Removing row");
-            e.Cancel = true;
-        }
-        else
-        {
-            await Http.DeleteAsync("WeatherForecast" + "?key=" + e.NewItem.key);
-            forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>
-                ("WeatherForecast");
-        }
-    }
+    // protected async Task RowRemoving(CancellableRowChange<WeatherForecast>
+    //     e)
+    // {
+    //     if (e.NewItem.Summary == "reject")
+    //     {
+    //         ts.ShowError("REJECTED - Removing row");
+    //         e.Cancel = true;
+    //     }
+    //     else
+    //     {
+    //         await Http.DeleteAsync("WeatherForecast" + "?key=" + e.NewItem.key);
+    //         forecasts = await Http.GetFromJsonAsync<WeatherForecast[]>
+    //             ("WeatherForecast");
+    //     }
+    // }
 }

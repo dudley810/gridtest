@@ -1,7 +1,5 @@
 using Microsoft.AspNetCore.Components.WebAssembly.Hosting;
-using Blazorise;
-using Blazorise.Bootstrap5;
-using Blazorise.Icons.FontAwesome;
+using Radzen;
 using Blazored.Toast;
 
 namespace GridTest.Client
@@ -14,12 +12,7 @@ namespace GridTest.Client
             builder.RootComponents.Add<App>("#app");
 
             builder.Services.AddScoped(sp => new HttpClient { BaseAddress = new Uri(builder.HostEnvironment.BaseAddress) });
-            builder.Services.AddBlazorise(options =>
-            {
-                options.Immediate = true;
-            })
-            .AddBootstrap5Providers()
-            .AddFontAwesomeIcons();
+            builder.Services.AddRadzenComponents();
 
             builder.Services.AddBlazoredToast();
 
